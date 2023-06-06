@@ -17,7 +17,7 @@ mock.melt$Genus <- as.character(mock.melt$Genus)
 mock.melt$Genus <- ifelse(mock.melt$Genus == "Escherichia/Shigella", "Escherichia", mock.melt$Genus)
 mock.melt$Genus <- factor(mock.melt$Genus, levels = c("Listeria", "Pseudomonas", "Bacillus", "Escherichia", "Salmonella", "Lactobacillus", "Staphylococcus"))
 
-# plot the composition of positive control
+# plot the composition of positive control against mock community
 genusPalette <- c(Bacillus="#009e73", Enterococcus="#332d2d", Escherichia="#0072b2", Lactobacillus="#f0e442", Listeria="#ecb333", Pseudomonas="#d62728", Salmonella="#ec6e0b", Staphylococcus="#76c6f3", Unknown="#bababa") 
 
 p.positive <- ggplot(data=mock_pos, aes(fill=Genus, x=Sample, y=Relative.abundance, width=.4)) +             theme_bw()+
@@ -33,7 +33,7 @@ p.positive <- ggplot(data=mock_pos, aes(fill=Genus, x=Sample, y=Relative.abundan
                legend.key.size = unit(0.5, "cm")
                    )
 
-## check sequencing depth and 16S copy numbers
+## plot sequencing depth and 16S gene copy numbers by sample types
 
 ps <- readRDS("phyloseq.rds"))
 
@@ -49,9 +49,7 @@ SAMPLE_TYPES <- c(
 )
 
 theme_set(theme_bw())
-# Part of the Tableau 10 palette (Version 9.x)
-
-      
+    
 ColorFillManual <- c(
         "Teat apex" = "#1f77b4",
         "Teat canal" = "#ff7f0e",
@@ -69,8 +67,6 @@ sdata_df$Type <- factor(sdata_df$Type, levels = SAMPLE_TYPES)
 sdata_df$PF_Clusters <- as.numeric(sdata_df$PF_Clusters)
 
 ## plot No. Reads by Sample Type
-
-
 p.reads <- sdata_df %>% 
   ggplot(aes(x = Type, y = PF_Clusters/1000, fill = Type, color=Type))+
   scale_color_manual (values = ColorFillManual)+
@@ -88,16 +84,14 @@ p.reads <- sdata_df %>%
         axis.title.y = element_text(size = 10))
 p.reads <- print(p.reads)
 
-
-# statistical analysis suing glm, ANOVA and emmeans
-## we cannot put CowID in the model, because some samples are not from cows
+## statistical analysis suing glm, ANOVA and emmeans
 glm.sample.depth <- glm(PF_Clusters/1000 ~ Type, data = sdata_df)
 summary(glm.sample.depth)
 car::Anova(glm.sample.depth)
 emmeans::emmeans(glm.sample.depth, pairwise~Type)
 
-
 ## plot copy No. by Sample Type
+
 p.copy<- sdata_df %>% 
   ggplot(aes(x = Type, y = log(CopyNumber), fill = Type, color=Type))+
   scale_color_manual (values = ColorFillManual)+
@@ -115,7 +109,6 @@ p.copy<- sdata_df %>%
         axis.title.y = element_text(size = 10))
 p.copy <- print(p.copy)
 
-
 # statistical analysis using glm, ANOVA and emmeans
 glm.sample.CopyN <- glm(log(CopyNumber) ~ Type, data = sdata_df)
 summary(glm.sample.CopyN)
@@ -125,6 +118,5 @@ emmeans::emmeans(glm.sample.CopyN, pairwise~Type)
 
 ## merge panel figure
 p.quality <- ((p.reads | p.copy) / (p.positive)) + plot_annotation(tag_levels = "A") + plot_layout(height=c(2,1))
-p.quality
 
 ggsave("Figure 2. Depth_16S copy_Positive.png"), width=10, height=8, p.quality, dpi=600)
