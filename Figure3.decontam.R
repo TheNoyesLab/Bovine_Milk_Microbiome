@@ -4,6 +4,8 @@ library(ggplot2)
 library(phyloseq)
 library(ggpubr)
 library(pairwiseAdonis)
+library(patchwork)
+library(microbiome)
 
 TYPE <- c(
   "Cisternal milk", 
@@ -11,9 +13,6 @@ TYPE <- c(
   "Teat apex", 
   "Stripped milk"
 )
-
-# Set current working directory
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis")
 
 # Set up paths
 path.rds <- "RDS/"
@@ -223,7 +222,6 @@ saveRDS(ps.decontam, file.path(path.rds, "ps.decontam.rds"))
 
 ps.contam <- prune_taxa(contam_seq, ps)
 saveRDS(ps.contam, file.path(path.rds, "ps.contam.rds"))
-sum(taxa_sums(ps.contam))/sum(taxa_sums(ps))
 
 # plot 16S gene copy vs abundance of contaminants
 
@@ -269,16 +267,12 @@ p.contam.counts <- ggplot(data=metadata, aes(x=log(CopyNumber), y=counts/1000))+
 p.contam.counts
 
 
-
-
 # plot the abundance of contaminants
-library(microbiome)
 detection <- sum(taxa_sums(ps.contam))/70*0.05
 pseq.contam <- aggregate_rare(ps.contam, level="Genus", detection = detection, prevalence = 0.2)
 
 melt.contam <- psmelt(pseq.contam)
 melt.contam$Type <- factor(melt.contam$Type, levels = SAMPLE_TYPES)
-
 
 p.contam <- ggplot(melt.contam, aes(x=X.SampleID, y=Abundance, fill=Genus)) +
   geom_bar(stat="identity") +
@@ -295,9 +289,7 @@ p.contam
 
 # NMDS of contaminants
 ps.contam.sample <- subset_samples(ps.contam, Type %in% c("Cisternal milk", "Stripped milk", "Teat apex", "Teat canal"))
-
 ps.contam.sample <- prune_taxa(taxa_sums(ps.contam)>0, ps.contam.sample)
-
 
 type_colors <- c(
   "Teat apex" = "#1f77b4",
@@ -323,21 +315,15 @@ bray.dist.contam<-vegdist(otu_table(ps.contam.sample), method='bray')
 bray.dist.contam
 
 metadata.sample <- sample_data(ps.contam.sample) %>% data.frame()
-adonis2(bray.dist.contam ~ Type, data=metadata.sample, permutations=999)
 
 beta_div.contam <-pairwise.adonis2(bray.dist.contam ~ Type, data=metadata.sample, permutations=999)
 beta_div.contam
 
 
-library(patchwork)
+# merge plots
 
-fig.contam <- (pa.plot + p.contam.counts + ord.pnmds.contam) / (p.contam ) + plot_annotation(tag_levels = c("A"))
-fig.contam
-ggsave(file.path (path.fig, "Figure 3. Decontam_Contaminants.png"), fig.contam, dpi=600)
-
-fig.decontam <- (freqScorePlot | prev.waterScorePlot | prev.extractionScorePlot) / (pa.plot + p.contam.counts + ord.pnmds.contam) / (p.contam ) + 
+fig.decontam <- (freqScorePlot + prev.waterScorePlot + prev.extractionScorePlot) / (pa.plot + p.contam.counts + ord.pnmds.contam) / (p.contam ) + 
   plot_annotation(tag_levels = c("A"))
-fig.decontam 
-ggsave(file.path (path.fig, "Figure 3. Decontam_Contaminants_all.png"), fig.decontam, width = 16, height = 12, dpi=600)
 
-save.image("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RData/decontam.RData")
+ggsave(file.path (path.fig, "Figure 3. Decontam_Contaminants.png"), fig.decontam, width = 16, height = 12, dpi=600)
+
