@@ -345,4 +345,28 @@ p.alpha.diversity <- ((p.richness / p.shannon / p.InvSimpson) | (p.richness.deco
 p.alpha.diversity
 
 
-ggsave(file.path(path.figure, "Figure 5. Alpha diversity.checked.png"), p.alpha.diversity, width = 9, height = 6, dpi=600)   
+ggsave(file.path(path.figure, "Figure 5. Alpha diversity.checked.png"), p.alpha.diversity, width = 9, height = 6, dpi=600) 
+
+
+## Plot Number of Reads over decontamination
+
+depth.all <- left_join(depth, depth.decontam, by="X.SampleID")
+depth.all <- left_join(depth.all, depth.sourcetracker, by="X.SampleID")
+rownames(depth.all) <- depth.all$X.SampleID
+depth.all <- depth.all[,-2]
+colnames(depth.all) <- c("Before decontam", "After decontam", "After sourcetracker")
+depth.all$Type <- metadata$Type
+depth.sample <- subset(depth.all, Type %in% c("Teat canal", "Teat apex", "Stripped milk", "Cisternal milk"))
+depth.sample.long <- depth.sample %>% pivot_longer(-Type,names_to="Decontamination",values_to="Depth")
+depth.sample.long$Decontamination <- factor(depth.sample.long$Decontamination, 
+              levels = c("Before decontam", "After decontam"  , "After sourcetracker"))
+
+
+p.depth <- depth.sample.long %>% 
+  ggplot(aes(x=Type, y=Depth/1000, fill = Decontamination))+
+  geom_boxplot()+
+  facet_wrap(vars(Decontamination))+
+  theme(axis.text.x = element_text(angle=-45),
+        axis.title.x = element_blank())+
+  ylab("Number of reads / 1000")
+p.depth
