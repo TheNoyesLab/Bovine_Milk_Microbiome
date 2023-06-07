@@ -6,6 +6,7 @@ library(dplyr)
 #Define the working directory and file paths.
 path.fastq <- "Data" # parent directory for raw data
 path.meta <- "Analysis/Meta" # directory for metadata
+path.rds <- "Analysis/RDS"
 path.rdp <- "Analysis/reference/silva_nr99_v138.1_train_set.fa.gz" # directory for reference database
 path.mock.fasta <- "Analysis/reference/ZymoBIOMICS.STD.refseq.v2/ssrRNAs/zymo_logdist_update.fasta" # directory for mock genome database
 
@@ -94,7 +95,7 @@ ps <- phyloseq(seq, tax, meta)
 taxa_names(ps) <- paste0("Seq", seq(ntaxa(ps)))
 ps <- prune_taxa(taxa_sums(ps) > 0, ps)
 
-saveRDS(ps, 'phyloseq.rds')
+saveRDS(ps, file.path(path.rds,'phyloseq.rds'))
 
 # Assign taxonomy to positive control
 seq.positive <- subset(seqtab.nochim, rownames(seqtab.nochim) %in% "MS67_S42")
@@ -105,6 +106,6 @@ meta.positive <- subset(meta, rownames(meta) %in% "MS67_S42")
 
 # Generate phyloseq object for positive control
 ps.postive <- phyloseq(seq.postive, tax.postive, meta.postive)
-saveRDS(ps.positive, "ps.positive.rds")
+saveRDS(ps.positive, file.path(path.rds,"ps.positive.rds"))
 
 
