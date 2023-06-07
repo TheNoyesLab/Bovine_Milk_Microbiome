@@ -4,8 +4,9 @@ library(patchwork)
 library(dplyr)
 library(gghalves)
 
+path.rds <- "Analysis/RDS"
 ## check positive mock sample
-ps.positive <- readRDS ("ps.positive.rds"))
+ps.positive <- readRDS (file.path(path.rds, "ps.positive.rds"))
 
 # mock community species
 mock <- c("Pseudomonas", "Escherichia/Shigella", "Salmonella", "Lactobacillus", 
@@ -35,7 +36,7 @@ p.positive <- ggplot(data=mock_pos, aes(fill=Genus, x=Sample, y=Relative.abundan
 
 ## plot sequencing depth and 16S gene copy numbers by sample types
 
-ps <- readRDS("phyloseq.rds"))
+ps <- readRDS(file.path(path.rds, "phyloseq.rds"))
 
 SAMPLE_TYPES <- c(
   "Teat apex",
