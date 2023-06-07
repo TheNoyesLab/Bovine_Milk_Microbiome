@@ -8,8 +8,9 @@ library(pairwiseAdonis)
 library(metagenomeSeq)
 
 
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS")
-path.results <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/results")
+path.rds <- ("Analysis/RDS")
+
+path.figure <- ("Analysis/Figures")
 
 SAMPLE_TYPES <- c(
   "Teat apex",
@@ -53,7 +54,7 @@ type_colors <- c(
 
 ## 1. pre-decontam
 
-ps <- readRDS("phyloseq.rds")
+ps <- readRDS(file.path(path.rds, "phyloseq.rds"))
 ps 
 
 metadata <- sample_data(ps) %>% data.frame()
@@ -81,7 +82,7 @@ write.csv(beta_div_ps, file.path(path.results, "pairwise permanova_phyloseq.csv"
 
 anova(betadisper(bray.dist, metadata$Type))
 
-# irdination
+# NMDS ordination
 ord.bray.nmds <- ordinate(ps, "NMDS", "bray", k=2, trymax = 1000)
 ord.bray.nmds
 
@@ -400,5 +401,4 @@ p.nmds.all <- (ord.pnmds + ord.pnmds.milk + ord.pnmds.teat) / (ord.pnmds.deconta
   plot_annotation(tag_levels = "A")
 p.nmds.all
 
-path.figure <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
 ggsave(file.path(path.figure, "Figure 6. NMDS-all.png"), p.nmds.all, width=15, height=10, dpi=600)
