@@ -5,8 +5,13 @@ library(dplyr)
 library(patchwork)
 library(microbiome)
 
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS")
 
+# set file path
+
+path.rds <("Analysis/RDS")
+fig.path <- ("Analysis/Figures")
+
+# set sample type and genus order and genus color
 type_order <- c(
   "Teat apex",
   "Teat canal",
@@ -14,55 +19,6 @@ type_order <- c(
   "Cisternal milk"
 )
 
-TA.genus <- unique(melt.ps.all.TA.rel.genus$Genus)
-TC.genus <- unique(melt.ps.all.TC.rel.genus$Genus)
-SM.genus <- unique(melt.ps.all.QM.rel.genus$Genus)
-CM.genus <- unique(melt.ps.all.CM.rel.genus$Genus)
-
-genus.order <- c("Acinetobacter",
-                "Aerococcus",
-                "Atopostipes",
-                "Bacteroides",
-                "Clostridium sensu stricto 1",
-                 "Corynebacterium",
-                "Kocuria",
-                "Methanobrevibacter",
-                "Rothia",
-                "Rikenellaceae RC9 gut group",
-                "Staphylococcus",
-                "Streptococcus",
-                "Succinivibrio",
-                "Terrisporobacter",
-                "Turicibacter",
-                "UCG-005",
-                "Weissella",
-                "Unknown",
-                "Other")
-
-scaleColorFillManual <-
-  scale_fill_manual(
-    values = 
-      c(
-        Acinetobacter="#9edae5",
-        Aerococcus="#17becf",
-        Atopostipes="#dbdb8d",
-        Bacteroides="#bcbd22",
-        "Clostridium sensu stricto 1"="#c7c7c7",
-        Corynebacterium="#7f7f7f",
-        Kocuria="#f7b6d2",
-        Methanobrevibacter="#e377c2",
-        Rothia="#c49c94",
-        "Rikenellaceae RC9 gut group"="#8c564b",
-        Staphylococcus="#c5b0d5",
-        Streptococcus="#9467bd",
-        Succinivibrio="#ff9896",
-        Terrisporobacter="#d62728",
-        Turicibacter="#98df8a",
-        "UCG-005"="#2ca02c",
-        Weissella="#ffbb78",
-        Unknown="#ff7f0e",
-        Other="#aec7e8"
-      ))
 
 ## 1. before decontam
 
@@ -71,6 +27,7 @@ ps <- subset_samples(ps, Type %in% type_order)
 
 otu <- otu_table(ps)
 tax <- tax_table(ps)
+
 meta <- sample_data(ps) %>% data.frame
 meta$Dataset <- rep("Before decontam", 55)
 meta <- sample_data(meta)
@@ -149,8 +106,7 @@ p.phylum <- ggplot(ps.melt.all.phylum, aes(x = X.SampleID, y = Abundance, fill =
   labs(y = "Relative abundance")
 p.phylum
 
-fig.path <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
-ggsave(file.path(fig.path, "Figure 7. phylum composition_sample type_checked_grid.png"), p.phylum, dpi=600)
+ggsave(file.path(fig.path, "Figure 7. phylum composition.png"), p.phylum, dpi=600)
 
 
 ## 5.2 aggregate on genus level
@@ -205,128 +161,5 @@ p.genus <- ggplot(ps.melt.all.genus, aes(x = X.SampleID, y = Abundance, fill = G
   scaleColorFillManual.genus 
 p.genus
 
-fig.path <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
-ggsave(file.path(fig.path, "Figure 7. genus composition_sample type_checked_grid.png"), p.genus, dpi=600)
+ggsave(file.path(fig.path, "Figure 7. genus composition.png"), p.genus, dpi=600)
 
-
-##############################################################
-
-## 5.1 teat apex
-ps.all.TA <- subset_samples(ps.all, Type %in% "Teat apex")
-ps.all.TA
-
-ps.all.TA.rel <- microbiome::transform(ps.all.TA, "compositional")
-ps.all.TA.rel.genus <- microbiome::aggregate_rare(ps.all.TA.rel, level = "Genus", detection = 0.03, prevalence = 0.2)
-
-melt.ps.all.TA.rel.genus <- psmelt(ps.all.TA.rel.genus)
-melt.ps.all.TA.rel.genus$Dataset <- factor(melt.ps.all.TA.rel.genus$Dataset, levels = c("Before decontam", "After decontam", "After SourceTracker"))
-melt.ps.all.TA.rel.genus$Genus <- factor(melt.ps.all.TA.rel.genus$Genus, levels = genus.order)
-
-
-p.genus.TA <- ggplot(melt.ps.all.TA.rel.genus, aes(x = X.SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat="identity") +
-  facet_wrap(~Dataset, nrow = 1, scales = "free_x") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "right",
-    legend.key.size = unit(10, "pt"),
-    plot.title = element_text(hjust = 0.5)
-  )+
-  labs(y = "Relative abundance",
-       title = "Teat apex") +
-  scaleColorFillManual
-p.genus.TA
-
-## 5.2 teat canal
-ps.all.TC <- subset_samples(ps.all, Type %in% "Teat canal")
-ps.all.TC
-
-ps.all.TC.rel <- microbiome::transform(ps.all.TC, "compositional")
-ps.all.TC.rel.genus <- microbiome::aggregate_rare(ps.all.TC.rel, level = "Genus", detection = 0.03, prevalence = 0.2)
-
-melt.ps.all.TC.rel.genus <- psmelt(ps.all.TC.rel.genus)
-melt.ps.all.TC.rel.genus$Dataset <- factor(melt.ps.all.TC.rel.genus$Dataset, levels = c("Before decontam", "After decontam", "After SourceTracker"))
-melt.ps.all.TC.rel.genus$Genus <- factor(melt.ps.all.TC.rel.genus$Genus, levels = genus.order)
-
-
-p.genus.TC <- ggplot(melt.ps.all.TC.rel.genus, aes(x = X.SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat="identity") +
-  facet_wrap(~Dataset, nrow = 1, scales = "free_x") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "right",
-    legend.key.size = unit(10, "pt"),
-    plot.title = element_text(hjust = 0.5)
-  )+
-  labs(y = "Relative abundance",
-       title = "Teat canal") +
-  scaleColorFillManual
-p.genus.TC
-
-## 5.3 Cisternal milk
-ps.all.CM <- subset_samples(ps.all, Type %in% "Cisternal milk")
-ps.all.CM
-
-ps.all.CM.rel <- microbiome::transform(ps.all.CM, "compositional")
-ps.all.CM.rel.genus <- microbiome::aggregate_rare(ps.all.CM.rel, level = "Genus", detection = 0.03, prevalence = 0.2)
-
-melt.ps.all.CM.rel.genus <- psmelt(ps.all.CM.rel.genus)
-melt.ps.all.CM.rel.genus$Dataset <- factor(melt.ps.all.CM.rel.genus$Dataset, levels = c("Before decontam", "After decontam", "After SourceTracker"))
-melt.ps.all.CM.rel.genus$Genus <- factor(melt.ps.all.CM.rel.genus$Genus, levels = genus.order)
-
-
-p.genus.CM <- ggplot(melt.ps.all.CM.rel.genus, aes(x = X.SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat="identity") +
-  facet_wrap(~Dataset, nrow = 1, scales = "free_x") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "right",
-    legend.key.size = unit(10, "pt"),
-    plot.title = element_text(hjust = 0.5)
-  )+
-  labs(y = "Relative abundance",
-       title = "Cisternal milk") +
-  scaleColorFillManual
-p.genus.CM
-
-## 5.4 Stripped milk
-ps.all.QM <- subset_samples(ps.all, Type %in% "Stripped milk")
-ps.all.QM
-
-ps.all.QM.rel <- microbiome::transform(ps.all.QM, "compositional")
-ps.all.QM.rel.genus <- microbiome::aggregate_rare(ps.all.QM.rel, level = "Genus", detection = 0.03, prevalence = 0.2)
-
-melt.ps.all.QM.rel.genus <- psmelt(ps.all.QM.rel.genus)
-melt.ps.all.QM.rel.genus$Dataset <- factor(melt.ps.all.QM.rel.genus$Dataset, levels = c("Before decontam", "After decontam", "After SourceTracker"))
-melt.ps.all.QM.rel.genus$Genus <- factor(melt.ps.all.QM.rel.genus$Genus, levels = genus.order)
-
-
-p.genus.QM <- ggplot(melt.ps.all.QM.rel.genus, aes(x = X.SampleID, y = Abundance, fill = Genus)) +
-  geom_bar(stat="identity") +
-  facet_wrap(~Dataset, nrow = 1, scales = "free_x") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "right",
-    legend.key.size = unit(10, "pt"),
-    plot.title = element_text(hjust = 0.5)
-  )+
-  labs(y = "Relative abundance",
-       title = "Stripped milk") +
-  scaleColorFillManual
-p.genus.QM
-
-## merge the plot
-p.genus.rel <- (p.genus.TA / p.genus.TC / p.genus.CM / p.genus.QM) +
-            plot_annotation(tag_levels = "A")
-p.genus.rel
-
-fig.path <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
-ggsave(file.path(fig.path, "Figure 7. genus composition_sample type_checked.png"), p.genus.rel, width=10, height=12, dpi=600)
