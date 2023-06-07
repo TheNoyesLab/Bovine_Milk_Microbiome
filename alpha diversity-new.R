@@ -6,11 +6,11 @@ library(lme4)
 library(patchwork)
 library(gghalves)
 
+# set file path
+path.rds <- "Analysis/RDS"
+path.figure <- ("Analysis/Figures")
 
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS")
-
-path.results <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/results")
-
+# set order for sample type
 SAMPLE_TYPES <- c(
   "Teat apex",
   "Teat canal",
@@ -33,7 +33,7 @@ ColorFillManual <- c(
   "Blank" = "#ebc850"
 )
 
-## 1. pre-decontam
+## 1. loapd ps pre-decontam
 
 ps <- readRDS("phyloseq.rds")
 ps
@@ -72,7 +72,6 @@ p.richness <- metadata %>%
 p.richness
 
 # statistical analysis 
-## should we include CowID as a co-variable, because non-animal samples have no CowId???
 glm.richness <- glm (Observed ~ Type , data = metadata)
 summary(glm.richness)
 car::Anova(glm.richness, Type=III)
@@ -103,7 +102,7 @@ p.shannon <- metadata %>%
 p.shannon
 
 # statistical analysis using glm, ANOVA and emmeans
-glm.shannon <- lmer(Shannon ~ Type + (1 | CowId), data = metadata)
+glm.shannon <- lmer(Shannon ~ Type, data = metadata)
 summary(glm.shannon)
 car::Anova(glm.shannon)
 emmeans.shannon <- emmeans::emmeans(glm.shannon, pairwise~Type)
@@ -134,7 +133,7 @@ p.InvSimpson <- metadata %>%
 p.InvSimpson
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.InvSimpson <- glm(InvSimpson ~ Type + CowId, data = metadata)
+glm.InvSimpson <- glm(InvSimpson ~ Type, data = metadata)
 summary(glm.InvSimpson)
 car::Anova(glm.InvSimpson)
 emmeans::emmeans(glm.InvSimpson, pairwise~Type)
@@ -142,7 +141,7 @@ emmeans::emmeans(glm.InvSimpson, pairwise~Type)
 
 ## 2. after-decontam
 
-ps.decontam <- readRDS("ps.decontam.rds")
+ps.decontam <- readRDS(file.path(path.rds, "ps.decontam.rds"))
 ps.decontam <- subset_samples(ps.decontam, !Type %in% c("Library", "Extraction"))
 ps.decontam <- prune_taxa(taxa_sums(ps.decontam)>0, ps.decontam)
 
@@ -207,7 +206,7 @@ p.shannon.decontam <- metadata.decontam %>%
 p.shannon.decontam
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.shannon.decontam <- glm(Shannon ~ Type + CowId, data = metadata.decontam)
+glm.shannon.decontam <- glm(Shannon ~ Type, data = metadata.decontam)
 summary(glm.shannon.decontam)
 car::Anova(glm.shannon.decontam)
 emmeans::emmeans(glm.shannon.decontam, pairwise~Type)
@@ -234,14 +233,14 @@ p.InvSimpson.decontam <- metadata.decontam %>%
 p.InvSimpson.decontam
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.InvSimpson.decontam <- glm(InvSimpson ~ Type + CowId, data = metadata.decontam)
+glm.InvSimpson.decontam <- glm(InvSimpson ~ Type, data = metadata.decontam)
 summary(glm.InvSimpson.decontam)
 car::Anova(glm.InvSimpson.decontam)
 emmeans::emmeans(glm.InvSimpson.decontam, pairwise~Type)
 
 ## 3. after-sourcetracker
 
-ps.sourcetracker <- readRDS("ps.decontam.st.checked.rds")
+ps.sourcetracker <- readRDS(file.path(path.rds, "ps.decontam.st.rds"))
 ps.sourcetracker <- prune_taxa(taxa_sums(ps.sourcetracker)>0, ps.sourcetracker)
 ps.sourcetracker
 
@@ -279,7 +278,7 @@ p.richness.sourcetracker <- metadata.sourcetracker %>%
 p.richness.sourcetracker
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.richness.sourcetracker <- glm(Observed ~ Type + CowId, data = metadata.sourcetracker)
+glm.richness.sourcetracker <- glm(Observed ~ Type, data = metadata.sourcetracker)
 summary(glm.richness.sourcetracker)
 car::Anova(glm.richness.sourcetracker)
 emmeans::emmeans(glm.richness.sourcetracker, pairwise~Type)
@@ -306,7 +305,7 @@ p.shannon.sourcetracker <- metadata.sourcetracker %>%
 p.shannon.sourcetracker
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.shannon.sourcetracker <- glm(Shannon ~ Type + CowId, data = metadata.sourcetracker)
+glm.shannon.sourcetracker <- glm(Shannon ~ Type, data = metadata.sourcetracker)
 summary(glm.shannon.sourcetracker)
 car::Anova(glm.shannon.sourcetracker)
 emmeans::emmeans(glm.shannon.sourcetracker, pairwise~Type)
@@ -333,7 +332,7 @@ p.InvSimpson.sourcetracker <- metadata.sourcetracker %>%
 p.InvSimpson.sourcetracker
 
 # statistical analysis suing glm, ANOVA and emmeans
-glm.InvSimpson.sourcetracker <- glm(InvSimpson ~ Type + CowId, data = metadata.sourcetracker)
+glm.InvSimpson.sourcetracker <- glm(InvSimpson ~ Type, data = metadata.sourcetracker)
 summary(glm.InvSimpson.sourcetracker)
 car::Anova(glm.InvSimpson.sourcetracker)
 emmeans::emmeans(glm.InvSimpson.sourcetracker, pairwise~Type)
@@ -345,36 +344,5 @@ p.alpha.diversity <- ((p.richness / p.shannon / p.InvSimpson) | (p.richness.deco
   plot_layout(widths=c(8, 7, 6))
 p.alpha.diversity
 
-path.figure <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
-ggsave(file.path(path.figure, "Figure 5. Alpha diversity.checked.png"), p.alpha.diversity, width = 9, height = 6, dpi=600)
 
-#########################
-## Plot Number of Reads
-
-depth.all <- left_join(depth, depth.decontam, by="X.SampleID")
-depth.all <- left_join(depth.all, depth.sourcetracker, by="X.SampleID")
-rownames(depth.all) <- depth.all$X.SampleID
-depth.all <- depth.all[,-2]
-colnames(depth.all) <- c("Before decontam", "After decontam", "After SourceTracker")
-depth.all$Type <- metadata$Type
-depth.sample <- subset(depth.all, Type %in% c("Teat canal", "Teat apex", "Stripped milk", "Cisternal milk"))
-depth.sample.long <- depth.sample %>% pivot_longer(-Type,names_to="Decontamination",values_to="Depth")
-depth.sample.long$Decontamination <- factor(depth.sample.long$Decontamination, 
-              levels = c("Before decontam", "After decontam"  , "After SourceTracker"))
-
-
-p.depth <- depth.sample.long %>% 
-  ggplot(aes(x=Type, y=Depth/1000, fill = Decontamination))+
-  geom_boxplot()+
-  facet_wrap(vars(Decontamination))+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle=-45),
-        axis.title.x = element_blank(),
-        legend.position = ("none"))+
-  ylab("Number of reads / 1000")
-
-p.depth
-
-ggsave(file.path(path.figure, "Figure S. Number of reads decontamination.png"), p.depth, dpi=600)
-
-       
+ggsave(file.path(path.figure, "Figure 5. Alpha diversity.checked.png"), p.alpha.diversity, width = 9, height = 6, dpi=600)   
