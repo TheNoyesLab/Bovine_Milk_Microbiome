@@ -12,7 +12,7 @@ path.rds <- ("Analysis/RDS")
 
 # read phyloseq object after decontam
 ps <- readRDS("ps.decontam.rds")
-target <- c("Teat apex", "Teat canal", "Quarter milk", "Cisternal milk")
+target <- c("Teat apex", "Teat canal", "Stripped milk", "Cisternal milk")
 ps.subset <- subset_samples(ps, Type %in% target)
 
 ## 1. remove contaminants from targeted animal samples using control as source
@@ -152,7 +152,6 @@ print(ord.pnmds.contam.st)
 # PERMANOVA
 otu.contam.st <- otu_table(ps.contam.st.checked)
 meta <- meta %>% data.frame
-meta$Type <- ifelse(meta$Type == "Quarter milk", "Stripped milk", meta$Type)
 
 permanova.contam.st.adonis <- adonis2(otu.contam.st ~ Type,
                                data = meta, permutations=999, method = "bray")
