@@ -5,20 +5,18 @@ library(ggplot2)
 library(MicrobiotaProcess)
 library(tidyr)
 
-setwd("/Users/deng0291/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis")
-path.rds <- ("/Users/deng0291/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS")
+# set up paths
+
+path.rds <- ("/Analysis/RDS")
+
+# read phyloseq object after decontam
 ps.decontam <- readRDS("RDS/ps.decontam.rds")
 metadata <- sample_data(ps.decontam)
 metadata <- data.frame(metadata)
 
 # plot rarefaction curve
 ps.sample <- subset_samples(ps.decontam, Type %in% c("Stripped milk", "Cisternal milk", "Teat canal", "Teat apex"))
-min(sample_sums(ps.sample))
-mean(sample_sums(ps.sample)) %>% round()
-# min 4137
-# mean 74851
 
-set.seed(1024)
 rareres <- get_rarecurve(obj=ps.sample, chunks=400)
 p_rare <- ggrarecurve(obj=rareres,
                       factorNames="Type",
@@ -34,8 +32,14 @@ p_rare
 
 # rarefaction was set at 40,000 when most samples reach the plateau
 rarefaction = 40000
+
+## sourcetracker was run for three times, we only provide the code for the 1st run below
+## 1. sources are "Library", "Blank", "Air", "Extraction"; sink are "Cisternal milk", "Stripped milk", "Teat canal", "Teat apex"
+## 2. sources are "Library", "Blank", "Air", "Extraction", "Teat canal", "Teat apex"; sink are "Cisternal milk", "Stripped milk"
+## 3. sources are "Library", "Blank", "Air", "Extraction", "Teat canal", "Teat apex", "Cisternal milk"; sink are "Stripped milk" 
+## The codes were sourced from <https://github.com/danknights/sourcetracker> and <https://github.com/lakarstens/ControllingContaminants16S/blob/master/Analyses/ControllingContaminants16S_SourceTrackerPrep.Rmd> 
 ##################################################
-# assign control as source, samples as sink
+# 1. assign control as source, samples as sink
 metadata <- metadata %>%
   mutate(SourceSink = case_when(
     Type %in% c("Library", "Blank", "Air", "Extraction") ~ "source",
@@ -76,7 +80,7 @@ envs <- metadata$Type
 if(is.element('CowId',colnames(metadata))) desc <- metadata$CowId
 
 # load SourceTracker package
-source('/Users/deng0291/Documents/R package tutorial/sourcetracker-master/src/SourceTracker.r')
+source('SourceTracker.r')
 
 # tune the alpha values using cross-validation (this is slow!)
 # tune.results <- tune.st(otus[train.ix,], envs[train.ix])
@@ -147,22 +151,20 @@ for(plot.type in plot.types){
 saveRDS(results, file.path(path.rds, "sourcetracker_contaminants_results.rds"))
 
 ############################################################
-#define quarter milk as sink and the rests are source
+# 2. define quarter milk as sink and the rests are source
 metadata<- metadata %>%
   mutate(SourceSink = case_when(
     Type %in% c("Teat canal", "Teat apex", "Cisternal milk", "Library", "Blank", "Air", "Extraction") ~ "source",
     Type==c("Quarter milk") ~ "sink"
   ))
-
-results.qm <- predict(st,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+# repeat the code above get the results.qm
 saveRDS(results.qm, file.path("RDS/", "sourcetracker_results_quartermilk.rds"))
 ###################################################
-#define cisternal milk as sink and the rests (exclude of quarter milk) are source
+#3. define cisternal milk as sink and the rests (exclude of quarter milk) are source
 metadata<- metadata %>%
   mutate(SourceSink = case_when(
     Type %in% c("Teat canal", "Teat apex", "Library", "Blank", "Air", "Extraction") ~ "source",
     Type==c("Cisternal milk") ~ "sink"
   ))
-
-results.cm <- predict(st,otus[test.ix,], alpha1=alpha1, alpha2=alpha2)
+# repeat the code above to the results.cm
 saveRDS(results.cm, file.path("RDS/", "sourcetracker_results_cisternalmilk.rds"))
