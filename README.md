@@ -4,11 +4,13 @@ This repository contains the code for bioinformatic and R analysis of the paper 
 # Tables of script
 The following code was sourced from Christopher Dean, <dean0358@umn.edu>
 - dada2
-- decontam
-- check positive
+- Figure 2_sequncing_quality
+- Figure 3_decontam
+
 
 The following code was sourced from Yale Deng, <deng0291@umn.edu>
-- sourcetracker <https://github.com/danknights/sourcetracker> and <https://github.com/lakarstens/ControllingContaminants16S/blob/master/Analyses/ControllingContaminants16S_SourceTrackerPrep.Rmd>
+- SourceTracker (source to the code is provided in the script)
+- Figure 4_check_sourcetracker
 - alpha diversity
 - beta diversity
 - microbial composition
