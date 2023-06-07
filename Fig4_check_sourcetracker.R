@@ -1,29 +1,24 @@
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis")
-
 library(data.table)
 library(dplyr)
 library(phyloseq)
 library(ggplot2)
 library(pairwiseAdonis)
 library(tidyr)
+library(microbiome)
+library(patchwork)
 
-path.rds <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS")
-path.figure <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/Figures")
-path.results <- ("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/results")
+# set file paths
+path.rds <- ("Analysis/RDS")
 
-
+# read phyloseq object after decontam
 ps <- readRDS("ps.decontam.rds")
-ps
-
-
 target <- c("Teat apex", "Teat canal", "Quarter milk", "Cisternal milk")
 ps.subset <- subset_samples(ps, Type %in% target)
-ps.subset
 
+## 1. remove contaminants from targeted animal samples using control as source
 
-## 1. remove contaminants from animal samples using control as source
-
-setwd("~/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/results/Sourcetrackerr_contorl_animal_samples_40000/full_results")
+# read source count matrix
+setwd("Analysis/results/Sourcetrackerr_contorl_animal_samples_40000/full_results")
 
 air <- fread('control_animal_samples_Air_contributions.txt') %>% as.data.frame()
 blank <- fread('control_animal_samples_Blank_contributions.txt') %>% as.data.frame()
@@ -46,53 +41,36 @@ library[,1] <- NULL
 row.names(unknown) <- unknown[,1]
 unknown[,1] <- NULL
 
-# sum up all sources including blanks and unknown
-ret_sum <- air + blank + ext + library + unknown
-rowSums(ret_sum)
-## rowSums = 1, the outcome of full_results is an otu table in relative abundance
-ret_sum <- ret_sum %>% round(digits=3)
-
-# change original otu table into relative abundance
-ps.comp <- microbiome::transform(ps.subset, transform = "compositional")
-otu_comp <- otu_table(ps.comp) %>% data.frame() %>% round (digits=3)
-
-# compare original otu table with rarefied sourcetracker table
-dim(ret_sum) # 55 14138
-dim(otu_comp) # 55 14138
-identical(colnames(ret_sum), colnames(otu_comp)) # TRUE
-identical(rownames(ret_sum), rownames(otu_comp)) # TRUE
-identical(ret_sum, otu_comp) # FALSE
-### slightly difference in otu relative abundance between out_comp and ret_sum, that was caused by rarefaction
-
-
-# create ps for contaminants
-# create the otu table for contaminants by multiply by sample depths
+# create ps for contaminants identified by sourcetracker
+# create the otu table for contaminants by multiplying sample depths
 contam_sum <- air + blank + ext + library
 
 sample.depths <- sample_sums(ps.subset)
 
 otu_contam <- sweep(contam_sum,1,sample.depths,'*') %>% round(digits=0)
+
 seq <- otu_table(otu_contam, taxa_are_rows = FALSE)
 meta <- sample_data(ps.subset)
-meta$Type <- ifelse(meta$Type == "Quarter milk", "Stripped milk", meta$Type)
 tax <- phyloseq::tax_table(ps.subset)
 ps.contam.st.checked <- phyloseq(seq, tax, meta)
 
-saveRDS(ps.contam.st.checked, file.path(path.rds,"ps.contam.st.checked.rds"))
+saveRDS(ps.contam.st, file.path(path.rds,"ps.contam.st.rds"))
 
-# create ps for noncontam
+# create ps for noncontam after sourcetracker
 
 otu_noncontam <- sweep(unknown,1,sample.depths,'*') %>% round(digits=0)
+
 seq.noncontam <- otu_table(otu_noncontam, taxa_are_rows = FALSE)
-ps.decontam.st.checked <- phyloseq(seq.noncontam, tax, meta)
+ps.decontam.st <- phyloseq(seq.noncontam, tax, meta)
 
-saveRDS(ps.decontam.st.checked, file.path(path.rds,"ps.decontam.st.checked.rds"))
+saveRDS(ps.decontam.st, file.path(path.rds,"ps.decontam.st.rds"))
 
-# plot proportion of contaminants
-results <- readRDS("/Users/deng0291/Desktop/Projects/01.Cow_Milk_Microbiome/Analysis/RDS/sourcetracker_contaminants_results.rds")
+## 2. plot proportion of contaminants
 
 meta <- sample_data(ps.subset) %>% data.frame()
-meta$Type <- ifelse(meta$Type == "Quarter milk", "Stripped milk", meta$Type)
+
+# proportion of contaminants is stored at results$proportions
+
 prop.type <- results$proportions %>% data.frame()
 prop.type$Type <- meta$Type
 prop.type.long <- prop.type %>% pivot_longer(-Type, names_to = "Source", values_to = "Proportion")
@@ -129,10 +107,11 @@ p.prop.contam <- ggplot(data=prop.long, mapping = aes(x = X.SampleID, y = Propor
 p.prop.contam
 
 
-# plot abundance of contaminants
+# 3. plot abundance of contaminants
 ps.contam.st.melt <- psmelt(ps.contam.st.checked)
-library(microbiome)
 detection <- sum(taxa_sums(ps.contam.st.checked))/55
+
+# genera with <5% relative abundance and <25% prevalence were grouped to Others
 pseq.contam <- aggregate_rare(ps.contam.st.checked, level="Genus", detection = detection*0.05, prevalence = 0.25)
 
 melt.pseq.contam <- psmelt(pseq.contam)
@@ -149,10 +128,9 @@ p.contam <-  ggplot(melt.pseq.contam, aes(x = X.SampleID, y = Abundance, fill = 
     panel.grid.major.x = element_blank()
   )+
   scale_fill_brewer("Genus", palette = "Paired")
-
 p.contam
 
-# plot NMDS ordination 
+# 4. plot NMDS ordination 
 type.colors <- c(
   "Teat apex" = "#1f77b4",
   "Teat canal" = "#ff7f0e",
@@ -181,19 +159,19 @@ permanova.contam.st.adonis <- adonis2(otu.contam.st ~ Type,
 permanova.contam.st <- pairwise.adonis2(otu.contam.st ~ Type,
                                       data = meta, permutations=999, method = "bray")
 permanova.contam.st
-write.csv(permanova.contam.st, file.path (path.results, "permanova.contam.st.checked.csv"))
 
-## 2. check contaminants in milk sample using control, teat apex and teat cannal as sources
+## 5. check contaminants in milk sample using control, teat apex and teat cannal as sources
 
 results.qm <- readRDS(file.path(path.rds, "sourcetracker_quarter_milk.rds"))
 results.cm <- readRDS(file.path(path.rds, "sourcetracker_cisternal_milk.rds"))
 
-# add sample type to the proportion table
+# add sample type to the stripped milk proportion table
 qm<-as.data.frame(results.qm$proportions)
 qm$X.SampleID <- rownames(qm)
 qm.long <- pivot_longer(qm, cols = -X.SampleID, names_to = "Source", values_to = "Proportion")
 qm.long$Type<- rep("Stripped milk", times =104)
 
+# add sample type to the cisternal milk proportion table
 cm <- as.data.frame(results.cm$proportions)
 cm$X.SampleID <- rownames(cm)
 cm.long <- pivot_longer(cm, cols = -X.SampleID, names_to = "Source", values_to = "Proportion")
@@ -217,9 +195,7 @@ p.milk <- ggplot(data=st_milk_prop, mapping = aes(x = X.SampleID, y = Proportion
 
 p.milk
 
-
-
-library(patchwork)
+# merge plots
 p.contam.st <- (((p.prop.contam) + (p.milk)) / ((p.contam) + (ord.pnmds.contam.st))) + plot_annotation(tag_levels = "A")
 p.contam.st
 
