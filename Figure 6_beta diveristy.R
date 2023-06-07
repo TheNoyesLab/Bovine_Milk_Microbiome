@@ -7,9 +7,8 @@ library(vegan)
 library(pairwiseAdonis)
 library(metagenomeSeq)
 
-
+# set file paths
 path.rds <- ("Analysis/RDS")
-
 path.figure <- ("Analysis/Figures")
 
 SAMPLE_TYPES <- c(
@@ -40,17 +39,6 @@ scaleColorFillManualPanel <-
       )
   )
 
-type_colors <- c(
-  "Teat apex" = "#1f77b4",
-  "Teat canal" = "#ff7f0e",
-  "Stripped milk" = "#2ca02c",
-  "Cisternal milk" = "#d62728",
-  "Library" = "#7f7f7f",
-  "Extraction" = "#AB1866",
-  "Positive" = "#c63d40",
-  "Air" = "#539caf",
-  "Blank" = "#ebc850"
-)
 
 ## 1. pre-decontam
 
@@ -77,8 +65,7 @@ beta_div <- adonis2(bray.dist ~ Type, data=metadata, permutations=999)
 beta_div
 
 beta_div.pair <-pairwise.adonis2(bray.dist ~ Type, data=metadata, permutations=999)
-beta_div_ps <- data.frame(beta_div.pair)
-write.csv(beta_div_ps, file.path(path.results, "pairwise permanova_phyloseq.csv"))
+beta_div.pair
 
 anova(betadisper(bray.dist, metadata$Type))
 
