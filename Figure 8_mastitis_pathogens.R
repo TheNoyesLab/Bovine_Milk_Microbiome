@@ -22,20 +22,17 @@ ps.mast.gen.rel <-aggregate_rare(ps.mast.rel, level = "Genus", detection = 0.001
 
 # plot relative abundance of mastitis per sample
 melt.mast <- psmelt(ps.mast.gen.rel)
-melt.mast<- melt.mast %>% group_by(Type, Genus) 
-p.melt.mast <- ggplot(melt.mast, aes(x = X.SampleID, y = Abundance, fill = Genus)) +
+
+melt.mast$CowId <- as.factor(melt.mast$CowId)
+
+p.melt.mast <- ggplot(melt.mast, aes(x = CowId, y = Abundance, fill = Genus)) +
   geom_bar(stat="identity") +
   facet_wrap(~Type, nrow = 1, scales = "free_x") +
   theme_bw()+
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    legend.key.size = unit(10, "pt")
-  )+
+  theme(axis.text.x = element_text(angle=90, vjust = 0.5))+
   labs(y = "Relative abundance") +
   scale_fill_brewer("Genus", palette = "Paired")
 
 print(p.melt.mast)
 
-ggsave (file.path(path.figures, "Figure 8. Potential mastitis abundance.png"), p.melt.mast, dpi = 600)
+ggsave (file.path(path.figures, "Figure 8. Potential mastitis abundance.png"), p.melt.mast, dpi = 1200, width = 12, height = 6)
