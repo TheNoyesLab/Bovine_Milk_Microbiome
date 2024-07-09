@@ -1,5 +1,5 @@
 # Bovine_Milk_Microbiome
-This repository contains the code for bioinformatic and R analysis of the paper "The impact of kit, environmental and sampling contamination on the observed microbiome of bovine milk".
+This repository contains the code for bioinformatic and R analysis of the paper "The impact of kit, environmental and sampling contamination on the observed microbiome of bovine milk" published in mSystems, DOI: https://doi.org/10.1128/msystems.01158-23.
 
 # Tables of script
 This repository contains nine R scripts to reproduce the analysis presented in the manuscript.
